@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 
 class AppConfig {
   const AppConfig._();
@@ -36,7 +36,7 @@ class AppConfig {
 
     final host = _configuredHost.trim().isNotEmpty
         ? _configuredHost.trim()
-        : '34.154.188.123';
+        : '34.154.48.159';
 
     return 'http://$host:$_configuredPort';
   }

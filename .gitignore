@@ -39,3 +39,6 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+# Project Secrets
+SECRETS_AND_CONFIG.md
