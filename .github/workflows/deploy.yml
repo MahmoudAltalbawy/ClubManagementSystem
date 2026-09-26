@@ -1,4 +1,4 @@
-name: Deploy
+name: Build & Deploy
 
 on:
   push:
@@ -6,41 +6,119 @@ on:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
-  # JOB 1 — Deploy to Core Machine
+  # JOB 1 — Build all images and push to GHCR (using automatic GITHUB_TOKEN)
+  # ─────────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push dotnet_backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./core_machine/dotnet_backend
+          push: true
+          tags: ghcr.io/mahmoudaltalbawy/equipex-dotnet-backend:latest
+
+      - name: Build & Push stats_extractor
+        uses: docker/build-push-action@v5
+        with:
+          context: ./core_machine/stats_extractor
+          push: true
+          tags: ghcr.io/mahmoudaltalbawy/equipex-stats-extractor:latest
+
+      - name: Build & Push prediction_model
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai_machine/prediction_model
+          push: true
+          tags: ghcr.io/mahmoudaltalbawy/equipex-prediction-model:latest
+
+      - name: Build & Push chatbot_service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai_machine/chatbot_service
+          push: true
+          tags: ghcr.io/mahmoudaltalbawy/equipex-chatbot-service:latest
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Deploy to Core Machine (parallel with Job 3)
   # ─────────────────────────────────────────────────────────────────────────────
   deploy-core:
     name: Deploy → Core Machine
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
-      - name: SSH → Pull latest code & rebuild
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy compose file to Core Machine
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CORE_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.CORE_SSH_PRIVATE_KEY }}
+          source: core_machine/docker-compose.prod.yml
+          target: ~/
+          strip_components: 1
+
+      - name: Deploy to Core Machine
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.CORE_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.CORE_SSH_PRIVATE_KEY }}
           script: |
-            cd ~/ClubManagementSystem
-            git pull origin main
-            docker compose -f core_machine/docker-compose.yml up -d --build --remove-orphans
+            docker pull ghcr.io/mahmoudaltalbawy/equipex-dotnet-backend:latest
+            docker pull ghcr.io/mahmoudaltalbawy/equipex-stats-extractor:latest
+            docker compose -f ~/docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # JOB 2 — Deploy to AI Machine (runs in PARALLEL with Job 1)
+  # JOB 3 — Deploy to AI Machine (parallel with Job 2)
   # ─────────────────────────────────────────────────────────────────────────────
   deploy-ai:
     name: Deploy → AI Machine
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
-      - name: SSH → Pull latest code & rebuild
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy compose file to AI Machine
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.AI_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.AI_SSH_PRIVATE_KEY }}
+          source: ai_machine/docker-compose.prod.yml
+          target: ~/
+          strip_components: 1
+
+      - name: Deploy to AI Machine
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.AI_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.AI_SSH_PRIVATE_KEY }}
           script: |
-            cd ~/ClubManagementSystem
-            git pull origin main
-            docker compose -f ai_machine/docker-compose.yml up -d --build --remove-orphans
+            docker pull ghcr.io/mahmoudaltalbawy/equipex-prediction-model:latest
+            docker pull ghcr.io/mahmoudaltalbawy/equipex-chatbot-service:latest
+            docker compose -f ~/docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
