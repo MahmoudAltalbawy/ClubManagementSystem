@@ -31,42 +31,48 @@ public class EmailService : IEmailService
 
         if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(password))
         {
-            _logger.LogError(
-                "SMTP email configuration is missing. Sender configured: {HasSender}; password configured: {HasPassword}.",
-                !string.IsNullOrWhiteSpace(senderEmail),
-                !string.IsNullOrWhiteSpace(password));
-            throw new InvalidOperationException("SMTP email sender configuration is missing.");
+            _logger.LogWarning(
+                "SMTP email configuration is not configured. Skipping email dispatch to {RecipientEmail}.",
+                recipientEmail);
+            return;
         }
 
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(senderName, senderEmail));
-        message.To.Add(MailboxAddress.Parse(recipientEmail));
-        message.Subject = $"You're invited to join {clubOrTeamName} as {roleName}";
-        message.Body = new TextPart("html")
+        try
         {
-            Text = $"""
-                <h2>Equipex Invitation</h2>
-                <p>{inviterName} invited you to join <strong>{clubOrTeamName}</strong> as <strong>{roleName}</strong>.</p>
-                <p>Click the link below to open the Equipex app and accept your invitation:</p>
-                <p><a href="https://MahmoudAltalbawy.github.io/invite?token={invitationToken}" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Accept Invitation</a></p>
-                <br>
-                <p><small>If you do not have the Equipex app installed, please install it first, then click the button above again to accept.</small></p>
-                """
-        };
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(senderName, senderEmail));
+            message.To.Add(MailboxAddress.Parse(recipientEmail));
+            message.Subject = $"You're invited to join {clubOrTeamName} as {roleName}";
+            message.Body = new TextPart("html")
+            {
+                Text = $"""
+                    <h2>Equipex Invitation</h2>
+                    <p>{inviterName} invited you to join <strong>{clubOrTeamName}</strong> as <strong>{roleName}</strong>.</p>
+                    <p>Click the link below to open the Equipex app and accept your invitation:</p>
+                    <p><a href="https://MahmoudAltalbawy.github.io/invite?token={invitationToken}" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Accept Invitation</a></p>
+                    <br>
+                    <p><small>If you do not have the Equipex app installed, please install it first, then click the button above again to accept.</small></p>
+                    """
+            };
 
-        using var smtp = new SmtpClient();
-        await smtp.ConnectAsync(
-            _config["Email:SmtpHost"] ?? "smtp.gmail.com",
-            int.TryParse(_config["Email:SmtpPort"], out var port) ? port : 587,
-            SecureSocketOptions.StartTls);
-        await smtp.AuthenticateAsync(senderEmail, password);
-        var smtpResponse = await smtp.SendAsync(message);
-        await smtp.DisconnectAsync(true);
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(
+                _config["Email:SmtpHost"] ?? "smtp.gmail.com",
+                int.TryParse(_config["Email:SmtpPort"], out var port) ? port : 587,
+                SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(senderEmail, password);
+            var smtpResponse = await smtp.SendAsync(message);
+            await smtp.DisconnectAsync(true);
 
-        _logger.LogInformation(
-            "Invitation email sent to {RecipientEmail}. SMTP response: {SmtpResponse}",
-            recipientEmail,
-            smtpResponse);
+            _logger.LogInformation(
+                "Invitation email sent to {RecipientEmail}. SMTP response: {SmtpResponse}",
+                recipientEmail,
+                smtpResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send invitation email to {RecipientEmail}.", recipientEmail);
+        }
     }
 
     public async Task SendNotificationEmailAsync(
@@ -80,39 +86,45 @@ public class EmailService : IEmailService
 
         if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(password))
         {
-            _logger.LogError(
-                "SMTP email configuration is missing. Sender configured: {HasSender}; password configured: {HasPassword}.",
-                !string.IsNullOrWhiteSpace(senderEmail),
-                !string.IsNullOrWhiteSpace(password));
-            throw new InvalidOperationException("SMTP email sender configuration is missing.");
+            _logger.LogWarning(
+                "SMTP email configuration is not configured. Skipping email dispatch to {RecipientEmail}.",
+                recipientEmail);
+            return;
         }
 
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(senderName, senderEmail));
-        message.To.Add(MailboxAddress.Parse(recipientEmail));
-        message.Subject = subject;
-        message.Body = new TextPart("html")
+        try
         {
-            Text = $"""
-                <h2>{System.Net.WebUtility.HtmlEncode(subject)}</h2>
-                <p>{System.Net.WebUtility.HtmlEncode(body)}</p>
-                <p>Open Equipex to review the latest team updates.</p>
-                """
-        };
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(senderName, senderEmail));
+            message.To.Add(MailboxAddress.Parse(recipientEmail));
+            message.Subject = subject;
+            message.Body = new TextPart("html")
+            {
+                Text = $"""
+                    <h2>{System.Net.WebUtility.HtmlEncode(subject)}</h2>
+                    <p>{System.Net.WebUtility.HtmlEncode(body)}</p>
+                    <p>Open Equipex to review the latest team updates.</p>
+                    """
+            };
 
-        using var smtp = new SmtpClient();
-        await smtp.ConnectAsync(
-            _config["Email:SmtpHost"] ?? "smtp.gmail.com",
-            int.TryParse(_config["Email:SmtpPort"], out var port) ? port : 587,
-            SecureSocketOptions.StartTls);
-        await smtp.AuthenticateAsync(senderEmail, password);
-        var smtpResponse = await smtp.SendAsync(message);
-        await smtp.DisconnectAsync(true);
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(
+                _config["Email:SmtpHost"] ?? "smtp.gmail.com",
+                int.TryParse(_config["Email:SmtpPort"], out var port) ? port : 587,
+                SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(senderEmail, password);
+            var smtpResponse = await smtp.SendAsync(message);
+            await smtp.DisconnectAsync(true);
 
-        _logger.LogInformation(
-            "Notification email sent to {RecipientEmail} with subject {Subject}. SMTP response: {SmtpResponse}",
-            recipientEmail,
-            subject,
-            smtpResponse);
+            _logger.LogInformation(
+                "Notification email sent to {RecipientEmail} with subject {Subject}. SMTP response: {SmtpResponse}",
+                recipientEmail,
+                subject,
+                smtpResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send notification email to {RecipientEmail}.", recipientEmail);
+        }
     }
 }
