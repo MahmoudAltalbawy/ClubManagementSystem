@@ -61,7 +61,8 @@ public class PlanDocumentController : ControllerBase
 
         var role = await GetTeamRoleAsync(teamId, userId.Value);
         var isAdmin = await IsAdminAsync(userId.Value);
-        if (!isAdmin && !IsTeamStaff(role) && !await IsClubManagerAsync(clubId, userId.Value))
+        var canView = await CanViewTeamAsync(clubId, teamId, userId.Value);
+        if (!isAdmin && !canView)
             return Forbid();
 
         var plan = await _db.CoachingPlans.FirstOrDefaultAsync(p => p.PlanId == planId && p.TeamId == teamId);

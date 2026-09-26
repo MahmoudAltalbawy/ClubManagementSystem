@@ -55,11 +55,11 @@ public class EventDocumentController : ControllerBase
     {
         var userId = GetCallerUserId();
         if (userId == null) return Unauthorized(new { error = "Invalid token." });
-        if (file == null || file.Length == 0) return BadRequest(new { error = "A file is required." });
         var role = await GetTeamRoleAsync(teamId, userId.Value);
         var isAdmin = await _db.Users.AnyAsync(u => u.UserId == userId.Value && u.IsAdmin);
+        var canView = await CanViewTeamAsync(clubId, teamId, userId.Value);
         
-        if (!IsTeamStaff(role) && !await IsClubManagerAsync(clubId, userId.Value) && !isAdmin)
+        if (!canView && !isAdmin)
             return Forbid();
 
         await using var stream = file.OpenReadStream();
@@ -74,7 +74,7 @@ public class EventDocumentController : ControllerBase
             OriginalFileName = file.FileName,
             ContentType = file.ContentType,
             Description = description?.Trim(),
-            UploadedByRole = role?.ToString() ?? "ClubManager",
+            UploadedByRole = role?.ToString() ?? (isAdmin ? "Admin" : "ClubManager"),
             FileSize = file.Length,
             StoragePath = fileUrl,
             CreatedAt = DateTime.UtcNow,
