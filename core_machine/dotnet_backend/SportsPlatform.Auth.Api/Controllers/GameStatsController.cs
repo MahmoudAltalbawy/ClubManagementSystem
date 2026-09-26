@@ -59,7 +59,14 @@ public class GameStatsController : ControllerBase
     {
         var uid = GetUserId();
         if (uid == null) return Unauthorized(new { error = "Invalid token." });
-        return Ok(await _svc.GetMatchStatsAsync(clubId, teamId, eventId, uid.Value));
+        try
+        {
+            return Ok(await _svc.GetMatchStatsAsync(clubId, teamId, eventId, uid.Value));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
     }
 
     [HttpDelete("clubs/{clubId:guid}/teams/{teamId:guid}/stats/matches/{eventId:guid}")]
