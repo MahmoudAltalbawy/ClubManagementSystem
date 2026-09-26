@@ -80,7 +80,16 @@ jobs:
           target: ~/
           strip_components: 1
 
-      - name: Deploy to Core Machine
+      - name: Copy database schema dump to Core Machine
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CORE_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.CORE_SSH_PRIVATE_KEY }}
+          source: almost_done
+          target: ~/
+
+      - name: Deploy & Auto-migrate Core Machine
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.CORE_HOST }}
@@ -92,6 +101,21 @@ jobs:
             docker pull ghcr.io/mahmoudaltalbawy/equipex-dotnet-backend:latest
             docker pull ghcr.io/mahmoudaltalbawy/equipex-stats-extractor:latest
             docker compose -f ~/docker-compose.prod.yml up -d --remove-orphans
+
+            # Wait for Postgres to be ready
+            sleep 4
+            docker exec equipex_postgres psql -U postgres -d equ -c "CREATE EXTENSION IF NOT EXISTS citext;" || true
+
+            # Check if users table exists; if not, automatically load schema and restart backend
+            if ! docker exec -i equipex_postgres psql -U postgres -d equ -c "SELECT to_regclass('public.users');" | grep -q "users"; then
+              echo "Database tables missing. Initializing database schema from almost_done..."
+              docker exec -i equipex_postgres psql -U postgres -d equ < ~/almost_done
+              docker restart equipex_dotnet_backend
+              echo "Database schema initialized successfully!"
+            else
+              echo "Database schema is already up to date."
+            fi
+
             docker image prune -f
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
