@@ -36,7 +36,7 @@ class AppConfig {
 
     final host = _configuredHost.trim().isNotEmpty
         ? _configuredHost.trim()
-        : '34.154.48.159';
+        : '3.120.132.93';
 
     return 'http://$host:$_configuredPort';
   }

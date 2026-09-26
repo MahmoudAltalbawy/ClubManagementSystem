@@ -42,3 +42,6 @@ Thumbs.db
 
 # Project Secrets
 SECRETS_AND_CONFIG.md
+appsettings.Development.json
+*.tar.gz
+trigger.py

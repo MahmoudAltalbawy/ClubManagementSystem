@@ -17,8 +17,8 @@ services:
 
   stats_extractor:
     build:
-      context: ./SportsPlatform.Auth/SportsPlatform.Auth.Api/scripts
-      dockerfile: Dockerfile.stats-extractor
+      context: ./stats_extractor
+      dockerfile: Dockerfile
     container_name: equipex_stats_extractor
     command: uvicorn stats_extractor_api:app --host 0.0.0.0 --port 8102
     expose:
@@ -28,7 +28,7 @@ services:
 
   dotnet_backend:
     build:
-      context: ./SportsPlatform.Auth
+      context: ./dotnet_backend
       dockerfile: Dockerfile
     container_name: equipex_dotnet_backend
     environment:
@@ -36,10 +36,10 @@ services:
       - ASPNETCORE_URLS=http://+:5000
       - ConnectionStrings__DefaultConnection=Host=postgres_db;Port=5432;Database=equ;Username=postgres;Password=159357
       - StatsExtractor__BaseUrl=http://stats_extractor:8102
-      - Microservice__BaseUrl=http://34.154.178.22:8000
-      - Microservice__PublicBaseUrl=http://34.154.48.159:5000
+      - Microservice__BaseUrl=http://3.76.41.140:8000
+      - Microservice__PublicBaseUrl=http://3.120.132.93:5000
       - Storage__Provider=S3
-      - Storage__BucketName=equipex-media-storage
+      - Storage__BucketName=equipex-s3
     ports:
       - "5000:5000"
     depends_on:

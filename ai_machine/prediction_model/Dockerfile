@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+﻿FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -11,11 +11,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY fiba_clean_project/prediction_service/requirements.txt /app/requirements.txt
+COPY prediction_service/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY fiba_clean_project /app/fiba_clean_project
-COPY fiba_clean_project/prediction_service /app/prediction_service
+COPY . /app/fiba_clean_project
+COPY prediction_service /app/prediction_service
 
 WORKDIR /app/prediction_service
 EXPOSE 8101
