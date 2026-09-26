@@ -90,7 +90,7 @@ jobs:
         with:
           host: ${{ secrets.CORE_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.CORE_SSH_PRIVATE_KEY }}
           source: core_machine/docker-compose.prod.yml
           target: ~/
           strip_components: 1
@@ -100,7 +100,7 @@ jobs:
         with:
           host: ${{ secrets.CORE_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.CORE_SSH_PRIVATE_KEY }}
           script: |
             # Log in to GHCR so we can pull private images
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -131,7 +131,7 @@ jobs:
         with:
           host: ${{ secrets.AI_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.AI_SSH_PRIVATE_KEY }}
           source: ai_machine/docker-compose.prod.yml
           target: ~/
           strip_components: 1
@@ -141,7 +141,7 @@ jobs:
         with:
           host: ${{ secrets.AI_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.AI_SSH_PRIVATE_KEY }}
           script: |
             # Log in to GHCR so we can pull private images
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -154,3 +154,4 @@ jobs:
 
             # Clean up old dangling images to save disk space
             docker image prune -f
+
