@@ -27,11 +27,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build & Push dotnet_backend
         uses: docker/build-push-action@v5
         with:
           context: ./core_machine/dotnet_backend
           push: true
+          provenance: false
           tags: ghcr.io/mahmoudaltalbawy/equipex-dotnet-backend:latest
 
       - name: Build & Push stats_extractor
@@ -39,6 +43,7 @@ jobs:
         with:
           context: ./core_machine/stats_extractor
           push: true
+          provenance: false
           tags: ghcr.io/mahmoudaltalbawy/equipex-stats-extractor:latest
 
       - name: Build & Push prediction_model
@@ -46,6 +51,7 @@ jobs:
         with:
           context: ./ai_machine/prediction_model
           push: true
+          provenance: false
           tags: ghcr.io/mahmoudaltalbawy/equipex-prediction-model:latest
 
       - name: Build & Push chatbot_service
@@ -53,6 +59,7 @@ jobs:
         with:
           context: ./ai_machine/chatbot_service
           push: true
+          provenance: false
           tags: ghcr.io/mahmoudaltalbawy/equipex-chatbot-service:latest
 
   # ─────────────────────────────────────────────────────────────────────────────
