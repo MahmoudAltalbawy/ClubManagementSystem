@@ -1,0 +1,38 @@
+services:
+  prediction_model:
+    image: ghcr.io/mahmoudaltalbawy/equipex-prediction-model:latest
+    container_name: equipex_prediction_model
+    environment:
+      - PREDICTION_SERVICE_TOKEN=put_the_prediction_service_token_here
+      - BACKEND_BASE_URL=http://3.120.132.93:5000
+      - BACKEND_SERVICE_TOKEN=equipex-local-dev-service-token-2026
+    expose:
+      - "8101"
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  chatbot_service:
+    image: ghcr.io/mahmoudaltalbawy/equipex-chatbot-service:latest
+    container_name: equipex_chatbot_service
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=llama-3.3-70b-versatile
+      - APP_API_BASE_URL=http://3.120.132.93:5000
+      - MICROSERVICE_SERVICE_TOKEN=equipex-local-dev-service-token-2026
+      - REQUIRE_SERVICE_TOKEN=0
+      - PREDICTION_SERVICE_BASE_URL=http://prediction_model:8101
+      - PREDICTION_SERVICE_TOKEN=put_the_prediction_service_token_here
+      - BACKEND_BASE_URL=http://3.120.132.93:5000
+      - BACKEND_SERVICE_TOKEN=equipex-local-dev-service-token-2026
+    ports:
+      - "8000:8000"
+    depends_on:
+      - prediction_model
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+networks:
+  ai_network:
+    driver: bridge

@@ -1,0 +1,53 @@
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: equipex_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 159357
+      POSTGRES_DB: equ
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - core_network
+    restart: unless-stopped
+
+  stats_extractor:
+    image: ghcr.io/mahmoudaltalbawy/equipex-stats-extractor:latest
+    container_name: equipex_stats_extractor
+    command: uvicorn stats_extractor_api:app --host 0.0.0.0 --port 8102
+    expose:
+      - "8102"
+    networks:
+      - core_network
+    restart: unless-stopped
+
+  dotnet_backend:
+    image: ghcr.io/mahmoudaltalbawy/equipex-dotnet-backend:latest
+    container_name: equipex_dotnet_backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Host=postgres_db;Port=5432;Database=equ;Username=postgres;Password=159357
+      - StatsExtractor__BaseUrl=http://stats_extractor:8102
+      - Microservice__BaseUrl=http://3.76.41.140:8000
+      - Microservice__PublicBaseUrl=http://3.120.132.93:5000
+      - Storage__Provider=S3
+      - Storage__BucketName=equipex-s3
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres_db
+      - stats_extractor
+    networks:
+      - core_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  core_network:
+    driver: bridge
