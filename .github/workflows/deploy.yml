@@ -118,7 +118,8 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.AI_SSH_PRIVATE_KEY }}
           script: |
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" > ~/.env
             docker pull ghcr.io/mahmoudaltalbawy/equipex-prediction-model:latest
             docker pull ghcr.io/mahmoudaltalbawy/equipex-chatbot-service:latest
-            docker compose -f ~/docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ~/.env -f ~/docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
