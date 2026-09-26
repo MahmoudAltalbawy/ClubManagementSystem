@@ -86,12 +86,16 @@ jobs:
           host: ${{ secrets.CORE_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.CORE_SSH_PRIVATE_KEY }}
+          envs: GHCR_TOKEN,GHCR_USER
           script: |
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo $GHCR_TOKEN | docker login ghcr.io -u $GHCR_USER --password-stdin
             docker pull ghcr.io/mahmoudaltalbawy/equipex-dotnet-backend:latest
             docker pull ghcr.io/mahmoudaltalbawy/equipex-stats-extractor:latest
             docker compose -f ~/docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB 3 — Deploy to AI Machine (parallel with Job 2)
@@ -124,10 +128,15 @@ jobs:
           host: ${{ secrets.AI_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.AI_SSH_PRIVATE_KEY }}
+          envs: GHCR_TOKEN,GHCR_USER,GROQ_KEY
           script: |
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" > ~/.env
+            echo $GHCR_TOKEN | docker login ghcr.io -u $GHCR_USER --password-stdin
+            echo "GROQ_API_KEY=$GROQ_KEY" > ~/.env
             docker pull ghcr.io/mahmoudaltalbawy/equipex-prediction-model:latest
             docker pull ghcr.io/mahmoudaltalbawy/equipex-chatbot-service:latest
             docker compose --env-file ~/.env -f ~/docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
